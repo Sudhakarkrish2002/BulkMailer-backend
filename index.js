@@ -1,18 +1,20 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 const app = express();
 const mongoose = require("mongoose");
-require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect("mongodb://127.0.0.1:27017/passkey")
+
+mongoose.connect(process.env.MONGO_URI)
 .then(() => {
   console.log("connected to Db successfully");
 })
 .catch(()=>{
     console.log("failed to connect with DB")
+
 })
 
 const userdetails = mongoose.model("bulkmail", {}, "bulkmail");
@@ -23,18 +25,21 @@ app.post("/sendmail", (req, res) => {
 
   userdetails.find()
     .then((data) => {
-      const { user, pass } = data[0].toJSON();
+      console.log(data);
+      const { user, pass} = data[0].toJSON();
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: user,
-          pass: pass,
+          user:user,
+          pass:pass
         },
       });
 
       new Promise(async function (resolve, reject) {
         try {
+          console.log("sending email to " + EmailList.length + " users");
           for (var i = 0; i < EmailList.length; i++) {
+            console.log(user,pass)
             await transporter.sendMail({
               from:user,
               to: EmailList[i],
@@ -46,6 +51,7 @@ app.post("/sendmail", (req, res) => {
           resolve("success");
         }
          catch (err) {
+          console.log(err)
           reject("failed");
         }
 
@@ -65,3 +71,4 @@ app.post("/sendmail", (req, res) => {
 app.listen(3000, () => {
   console.log("server started on port 3000...");
 });
+
